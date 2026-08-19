@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/*.deb
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+.qa/
+.runtime-test-profile*/
+.runtime-packaged-profile*/
+.runtime*/
+.sandbox-probe*/
+
+# Local config (contains API keys)
+config.json
+youdao_api.csv
+.env
+.env.*
+!.env.example
+config.local.*
+credentials.bin
+
+# Local databases, documents, and migration backups
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.pdf
+backups/
+
+# Release binaries (hosted on GitHub Releases)
+release/*.deb
+
+# API keys (test files)
+test_api_key.txt
+*.key
+*.pem
+*.p12
+*.pfx
+
+# API keys (test files)
+apis.csv
+# 参考文件（DeepSeek 网页版快照，不提交）
+DeepSeek - *.html

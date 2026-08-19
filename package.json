@@ -1,0 +1,72 @@
+{
+  "name": "deepshui-translator-3",
+  "version": "3.0.0",
+  "description": "DeepShui Translator 3 - 本地学术 PDF 翻译与阅读工作台",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node scripts/run-tests.js",
+    "dist": "electron-builder --linux deb",
+    "dist:appimage": "electron-builder --linux AppImage",
+    "dist:win": "electron-builder --win nsis",
+    "dist:win:dir": "electron-builder --win --x64 --dir --config.electronDist=node_modules/electron/dist",
+    "dist:mac": "electron-builder --mac dmg"
+  },
+  "author": "DeepShui Contributors",
+  "license": "MIT",
+  "homepage": "https://github.com/hyfllll/deepshui-translator-3",
+  "devDependencies": {
+    "electron": "^41.10.6",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.deepshui.translator3",
+    "productName": "DeepShui Translator 3",
+    "files": [
+      "main.js",
+      "main/**/*",
+      "preload.js",
+      "renderer/**/*"
+    ],
+    "linux": {
+      "target": [
+        "deb",
+        "AppImage"
+      ],
+      "category": "Office",
+      "icon": "assets/icon.png",
+      "maintainer": "hyfllll <141288898+hyfllll@users.noreply.github.com>"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "assets/icon.png",
+      "category": "public.app-category.productivity"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils"
+      ],
+      "afterInstall": "build/after-install.tpl"
+    }
+  },
+  "allowScripts": {
+    "electron@41.10.6": true
+  }
+}

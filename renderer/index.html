@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'none'">
+  <title>DeepShui Translator 3</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="lib/katex.min.css">
+</head>
+<body>
+  <!-- 本地文献库首页 -->
+  <section id="library-view">
+    <header class="app-header">
+      <div class="brand-block">
+        <div class="brand-mark">译</div>
+        <div><strong>深水翻译</strong><span>本地学术阅读工作台</span></div>
+      </div>
+      <div class="header-actions">
+        <label class="theme-control" title="界面主题">
+          <span>主题</span>
+          <select id="theme-select">
+            <option value="system">跟随系统</option>
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+          </select>
+        </label>
+        <button id="library-settings" class="icon-button" title="设置">⚙</button>
+      </div>
+    </header>
+    <div class="library-shell">
+      <aside class="library-nav">
+        <nav>
+          <button class="library-filter active" data-filter="all">全部文献</button>
+          <button class="library-filter" data-filter="recent">最近阅读</button>
+          <button class="library-filter" data-filter="favorite">收藏</button>
+        </nav>
+        <div class="storage-note">
+          <strong>仅保存在本机</strong>
+          <span>无需账户，不上传文献库数据</span>
+        </div>
+      </aside>
+      <main class="library-content">
+        <div class="library-heading">
+          <div>
+            <p class="eyebrow">MY LIBRARY</p>
+            <h1 id="library-title">全部文献</h1>
+            <p id="library-summary">正在读取本地文献库…</p>
+          </div>
+          <div class="import-actions">
+            <button id="import-reference" class="secondary-button">引用原文件</button>
+            <button id="import-managed" class="primary-button">复制到文献库</button>
+          </div>
+        </div>
+        <div id="library-message" class="library-message hidden"></div>
+        <div id="library-grid" class="library-grid"></div>
+        <div id="library-empty" class="library-empty hidden">
+          <div class="empty-art">PDF</div>
+          <h2>建立你的本地文献库</h2>
+          <p>引用模式不复制文件；托管模式会保存一份独立副本。两种方式都不会上传。</p>
+          <div class="import-actions centered">
+            <button id="empty-import-reference" class="secondary-button">引用原文件</button>
+            <button id="empty-import-managed" class="primary-button">复制到文献库</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- 阅读器工作区 -->
+  <section id="reader-view" class="hidden">
+  <!-- 工具栏 -->
+  <div id="toolbar">
+    <button id="btn-library" title="返回文献库">← 文献库</button>
+    <span id="reader-document-title" class="reader-title">未打开文献</span>
+    <span class="sep"></span>
+    <button id="btn-open" title="打开 PDF (Ctrl+O)">📂 打开</button>
+    <span class="sep"></span>
+    <button id="btn-zoom-out" title="缩小">−</button>
+    <span id="zoom-label">100%</span>
+    <button id="btn-zoom-in" title="放大">+</button>
+    <select id="zoom-mode" title="原文缩放模式">
+        <option value="fit-width">适合宽度</option>
+        <option value="fit-page">适合整页</option>
+        <option value="actual-size">实际大小</option>
+        <option value="manual" disabled>手动缩放</option>
+    </select>
+    <span class="sep"></span>
+    <span id="page-info">— / —</span>
+    <input id="page-input" type="number" min="1" value="1" title="跳转页码">
+    <button id="btn-goto" title="跳转">跳转</button>
+    <button id="btn-bookmark" title="为当前页添加书签">☆ 书签</button>
+    <button id="btn-reader-mode" title="切换原文与智能排版阅读">智能排版</button>
+    <button id="btn-focus" title="隐藏翻译栏，专注阅读">专注</button>
+    <button id="btn-sidebar" title="收起翻译栏">收起翻译</button>
+    <span class="spacer"></span>
+    <button id="btn-settings" title="设置">⚙️</button>
+  </div>
+
+  <!-- 主区域 -->
+  <div id="main">
+    <!-- PDF 阅读区 -->
+    <div id="pdf-container">
+      <div id="pdf-placeholder">
+        <div class="placeholder-inner">
+          <div class="placeholder-icon">📄</div>
+          <p id="placeholder-text">打开一个 PDF 文件开始阅读</p>
+          <button id="btn-open-placeholder">打开 PDF</button>
+          <p class="hint">或直接将 PDF 拖入窗口</p>
+          <p id="loading-progress" class="hidden"></p>
+        </div>
+      </div>
+      <div id="pdf-viewer"></div>
+      <section id="reflow-view" class="hidden" aria-label="本地智能排版阅读">
+        <header id="reflow-header">
+          <div>
+            <strong>智能排版</strong>
+            <span id="reflow-status">本地处理，不会上传 PDF</span>
+          </div>
+          <div class="reflow-actions">
+            <button id="btn-reflow-generate">生成排版</button>
+            <button id="btn-reflow-ai-enhance" title="可选：只发送本地提取的文字与页码结构，不上传 PDF 或页面图片">AI 优化（可选）</button>
+            <button id="btn-reflow-ai-apply" class="hidden">应用布局</button>
+            <button id="btn-reflow-ai-discard" class="hidden">放弃预览</button>
+            <button id="btn-reflow-cancel" class="hidden">取消</button>
+          </div>
+        </header>
+        <div id="reflow-progress" class="hidden"></div>
+        <article id="reflow-content"></article>
+      </section>
+    </div>
+
+    <div id="sidebar-resizer" role="separator" aria-label="调整翻译栏宽度"></div>
+
+    <!-- 翻译侧边栏 -->
+    <div id="sidebar">
+      <div id="sidebar-header">
+        <span>翻译</span>
+        <div class="sidebar-controls">
+          <select id="engine-select" title="翻译引擎">
+            <option value="youdao">有道</option>
+            <option value="baidu">百度</option>
+            <option value="xunfei">讯飞</option>
+            <option value="deepl">DeepL</option>
+            <option value="google">Google</option>
+          </select>
+          <select id="target-lang" title="目标语言">
+            <option value="zh-CN">中文</option>
+            <option value="en">英文</option>
+            <option value="ja">日语</option>
+            <option value="ko">韩语</option>
+            <option value="fr">法语</option>
+            <option value="de">德语</option>
+            <option value="none">不翻译</option>
+          </select>
+        </div>
+      </div>
+      <div id="sidebar-content">
+        <div id="translate-placeholder">
+          <p>在 PDF 中选中文本，<br>翻译结果会显示在这里</p>
+        </div>
+        <div id="translate-result" class="hidden">
+          <div class="result-block">
+            <div class="result-label">原文</div>
+            <div id="result-source" class="result-text"></div>
+          </div>
+          <div class="result-block">
+            <div class="result-label">译文 <button id="btn-copy" title="复制译文">📋</button></div>
+            <div id="result-target" class="result-text"></div>
+          </div>
+          <div id="result-footer">
+            <span id="result-engine">有道翻译</span>
+            <span id="result-status"></span>
+          </div>
+        </div>
+        <div id="translate-loading" class="hidden">
+          <div class="spinner"></div>
+          <p>翻译中...</p>
+        </div>
+        <div id="translate-error" class="hidden">
+          <p id="error-text"></p>
+        </div>
+
+        <!-- AI 解释 -->
+        <div id="ai-explain" class="hidden">
+          <div class="ai-header">
+            <span>AI 解释</span>
+            <span id="ai-explain-status" class="ai-status"></span>
+          </div>
+          <div id="ai-explain-content" class="ai-content"></div>
+        </div>
+
+        <!-- AI 问答 -->
+        <div id="ai-ask" class="hidden">
+          <div class="ai-header">
+            <span>AI 问答</span>
+            <span id="ai-ask-status" class="ai-status"></span>
+          </div>
+          <div id="ai-ask-content" class="ai-content"></div>
+          <div id="fulltext-progress" class="hidden">
+            <div id="fulltext-progress-bar"></div>
+            <span id="fulltext-progress-text"></span>
+          </div>
+          <div class="ai-ask-input">
+            <!-- 图片附件预览区（仿 DeepSeek：缩略图在输入框上方） -->
+            <div id="ai-ask-images" class="ai-ask-images hidden"></div>
+            <textarea id="ai-ask-box" rows="1" placeholder="向 AI 提问...（Enter 发送，Shift+Enter 换行）"></textarea>
+            <div class="ai-ask-buttons">
+              <div class="ai-ask-left">
+                <button id="ai-ask-image" title="选择 PDF 中的图片，随问题一起发送">选图</button>
+                <button id="ai-ask-clear" title="清空显示内容（上下文保留）">清屏</button>
+                <button id="ai-ask-reset" title="重置对话：清空历史并重新喂入全文让 AI 总结">重置对话</button>
+              </div>
+              <div class="ai-ask-right">
+                <span class="ai-ask-summary-range" title="AI 总结时使用的页数范围">
+                  总结页数
+                  <input id="ai-summary-start" type="number" min="1" value="1" title="起始页">
+                  -
+                  <input id="ai-summary-end" type="number" min="1" value="16" title="结束页">
+                </span>
+                <button id="ai-ask-send">发送</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </section>
+
+  <!-- 设置面板 -->
+  <div id="settings-overlay" class="hidden">
+    <div id="settings-panel">
+      <div id="settings-header">
+        <span>⚙️ 设置</span>
+        <button id="btn-settings-close">✕</button>
+      </div>
+      <div id="runtime-security-status" class="runtime-security-status">正在检查安全模式…</div>
+      <div class="settings-tabs">
+        <button class="settings-tab active" data-tab="engine-tab">翻译引擎</button>
+        <button class="settings-tab" data-tab="ai-tab">AI 引擎</button>
+      </div>
+      <div class="settings-body">
+        <div id="engine-tab">
+          <h3>翻译引擎</h3>
+          <p class="settings-hint">选择引擎并填写对应凭证，凭证仅保存在本机用户目录</p>
+          <div class="form-row">
+            <label>默认引擎</label>
+            <select id="set-engine">
+              <option value="youdao">有道翻译</option>
+              <option value="baidu">百度翻译</option>
+              <option value="xunfei">讯飞翻译</option>
+              <option value="deepl">DeepL</option>
+              <option value="google">Google 翻译</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>默认目标语言</label>
+            <select id="set-lang">
+              <option value="zh-CN">中文</option>
+              <option value="en">英文</option>
+              <option value="ja">日语</option>
+              <option value="ko">韩语</option>
+              <option value="fr">法语</option>
+              <option value="de">德语</option>
+              <option value="none">不翻译</option>
+            </select>
+          </div>
+          <div id="engine-fields"></div>
+          <p class="settings-hint" id="engine-help"></p>
+          <div id="settings-status"></div>
+          <div class="settings-actions">
+            <button id="btn-settings-test">测试连接</button>
+            <button id="btn-settings-save">保存</button>
+          </div>
+        </div>
+
+        <div id="ai-tab" class="hidden">
+          <h3>AI 引擎</h3>
+          <p class="settings-hint">用于 AI 解释和 AI 问答，不影响翻译</p>
+          <div class="form-row">
+            <label>提供商</label>
+            <select id="set-ai-provider">
+              <option value="deepseek">DeepSeek</option>
+              <option value="qwen">千问</option>
+              <option value="doubao">豆包</option>
+              <option value="kimi">Kimi</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>API Key</label>
+            <input id="set-ai-key" type="password" placeholder="粘贴 API Key 后点击右侧刷新拉取模型">
+          </div>
+          <div class="form-row">
+            <label>模型</label>
+            <div class="ai-model-row">
+              <select id="set-ai-model" disabled>
+                <option value="">先输入 API Key 再点击刷新</option>
+              </select>
+              <button id="btn-ai-refresh" title="拉取模型列表">🔄</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>多模态功能</label>
+            <select id="set-ai-multimodal" title="关闭后不允许上传图片，总结改为提取全文文本">
+              <option value="on" selected>开启</option>
+              <option value="off">关闭</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>深度思考</label>
+            <select id="set-ai-deepthink">
+              <option value="off" selected>关闭</option>
+              <option value="low">low</option>
+              <option value="high">high</option>
+              <option value="max">max</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>显示 AI 解释</label>
+            <select id="set-ai-explain">
+              <option value="off" selected>关闭</option>
+              <option value="on">开启</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>显示 AI 问答</label>
+            <select id="set-ai-ask">
+              <option value="off" selected>关闭</option>
+              <option value="on">开启</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>隔离解释与问答上下文</label>
+            <select id="set-ai-isolate">
+              <option value="on" selected>开启</option>
+              <option value="off">关闭</option>
+            </select>
+          </div>
+          <!-- 模型拉取进度条 -->
+          <div id="ai-models-progress" class="hidden">
+            <div id="ai-models-progress-bar"></div>
+            <span id="ai-models-progress-text"></span>
+          </div>
+          <div id="ai-settings-status"></div>
+          <div class="settings-actions">
+            <button id="btn-ai-test">测试 AI</button>
+            <button id="btn-settings-save-ai">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 未保存确认框 -->
+  <div id="confirm-overlay" class="hidden">
+    <div id="confirm-panel">
+      <p id="confirm-text">有未保存的更改，如何处理？</p>
+      <div class="confirm-actions">
+        <button id="confirm-cancel">取消</button>
+        <button id="confirm-discard">不保存</button>
+        <button id="confirm-save">保存并退出</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="pdfjs/pdf.min.js"></script>
+  <script src="lib/marked.min.js"></script>
+  <script src="lib/purify.min.js"></script>
+  <script src="lib/katex.min.js"></script>
+  <script src="lib/auto-render.min.js"></script>
+  <script src="pdf-viewer.js"></script>
+  <script src="library.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
